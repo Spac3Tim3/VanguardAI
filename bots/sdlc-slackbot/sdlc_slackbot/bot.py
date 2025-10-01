@@ -23,7 +23,6 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk import WebClient
 from utils import *
 
-
 logger = getLogger(__name__)
 
 
@@ -395,40 +394,39 @@ def update_resources():
                         resource.content = new_content
                         new_params[resource.url] = new_content
                         changed = True
+                        resource.content_hash = hash_content(new_content)
+                        resource.save()
 
-                    if not changed:
-                        continue
+                if not changed:
+                    continue
 
-                    old_context = model_params_to_str(assessment_params)
-                    new_context = model_params_to_str(new_params)
+                old_context = model_params_to_str(assessment_params)
+                new_context = model_params_to_str(new_params)
 
-                    context = {
-                        "previous_context": previous_content,
-                        "previous_decision": {
-                            "risk": assessment.risk,
-                            "confidence": assessment.confidence,
-                            "justification": assessment.justification,
-                        },
-                        "new_context": new_content,
-                    }
+                context = {
+                    "previous_context": previous_content,
+                    "previous_decision": {
+                        "risk": assessment.risk,
+                        "confidence": assessment.confidence,
+                        "justification": assessment.justification,
+                    },
+                    "new_context": new_content,
+                }
 
-                    context_json = json.dumps(context, indent=2)
+                context_json = json.dumps(context, indent=2)
 
-                    new_response = ask_ai(config.base_prompt + config.update_prompt, context_json)
+                new_response = ask_ai(config.base_prompt + config.update_prompt, context_json)
 
-                    resource.content_hash = hash_content(new_content)
-                    resource.save()
+                if new_response["outcome"] == "unchanged":
+                    continue
 
-                    if new_response["outcome"] == "unchanged":
-                        continue
+                normalized_response = normalize_response(new_response)
+                clean_response = clean_normalized_response(normalized_response)
 
-                    normalized_response = normalize_response(new_response)
-                    clean_response = clean_normalized_response(normalized_response)
+                for item in clean_response:
+                    assessment.update(**item).execute()
 
-                    for item in clean_response:
-                        assessment.update(**item).execute()
-
-                    asyncio.run(send_update_notification(assessment_params, new_response))
+                asyncio.run(send_update_notification(assessment_params, new_response))
         except Exception as e:
             logger.error(f"error: {e} updating resources")
             traceback.print_exc()
