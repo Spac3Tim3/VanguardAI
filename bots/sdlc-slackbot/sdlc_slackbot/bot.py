@@ -444,15 +444,11 @@ if __name__ == "__main__":
 
     config = get_config()
 
-    message_handler = []
-    action_handlers = []
-    view_submission_handlers = []
-
     app = asyncio.run(
         init_bot(
             openai_organization_id=config.openai_organization_id,
-            slack_message_handler=message_handler,
-            slack_action_handlers=action_handlers,
+            slack_message_handler=None,
+            slack_action_handlers=[],
             slack_template_path=template_path,
         )
     )
