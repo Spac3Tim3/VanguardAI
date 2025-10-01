@@ -48,7 +48,8 @@ class BaseMessageHandler(BaseHandler):
 
 
 class BaseActionHandler(BaseHandler):
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def action_id(self) -> str:
         ...
 
