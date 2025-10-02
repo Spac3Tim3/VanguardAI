@@ -255,27 +255,52 @@ monitor_thread_sleep_seconds = 6
 
 if __name__ == "__main__":
     import atexit
+    import sys
     
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    load_config(os.path.join(current_dir, "config.toml"))
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(current_dir, "config.toml")
+        
+        # Load configuration
+        logger.info(f"Loading configuration from {config_path}")
+        load_config(config_path)
+        config = get_config()
+        
+        # Validate configuration
+        if not config.notification_channel_id:
+            raise ValueError("notification_channel_id must be set in config.toml")
+        
+        logger.info("Configuration loaded successfully")
+        logger.info(f"Notification channel: {config.notification_channel_id}")
 
-    template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+        template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 
-    config = get_config()
+        # Start background thread for resource monitoring
+        logger.info("Starting background resource monitoring thread")
+        _background_thread = threading.Thread(target=update_resources, daemon=True)
+        _background_thread.start()
+        
+        # Register cleanup on exit
+        atexit.register(stop_background_thread)
 
-    # Start background thread for resource monitoring
-    _background_thread = threading.Thread(target=update_resources, daemon=True)
-    _background_thread.start()
-    
-    # Register cleanup on exit
-    atexit.register(stop_background_thread)
-
-    # Use start_bot with proper handler classes
-    asyncio.run(
-        start_bot(
-            openai_organization_id=config.openai_organization_id,
-            slack_message_handler=SDLCMessageHandler,
-            slack_action_handlers=[SubmitFormHandler, SubmitFollowupQuestionsHandler],
-            slack_template_path=template_path,
+        # Use start_bot with proper handler classes
+        logger.info("Starting SDLC Slackbot...")
+        asyncio.run(
+            start_bot(
+                openai_organization_id=config.openai_organization_id,
+                slack_message_handler=SDLCMessageHandler,
+                slack_action_handlers=[SubmitFormHandler, SubmitFollowupQuestionsHandler],
+                slack_template_path=template_path,
+            )
         )
-    )
+    except FileNotFoundError as e:
+        logger.error(f"Configuration file not found: {e}")
+        logger.error("Please ensure config.toml exists in the sdlc_slackbot directory")
+        sys.exit(1)
+    except ValueError as e:
+        logger.error(f"Configuration error: {e}")
+        logger.error("Please check your configuration and environment variables")
+        sys.exit(1)
+    except Exception as e:
+        logger.exception(f"Failed to start SDLC Slackbot: {e}")
+        sys.exit(1)
