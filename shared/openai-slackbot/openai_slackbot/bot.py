@@ -14,7 +14,7 @@ logger = getLogger(__name__)
 async def register_app_handlers(
     *,
     app: AsyncApp,
-    message_handler: t.Type[BaseMessageHandler],
+    message_handler: t.Optional[t.Type[BaseMessageHandler]],
     action_handlers: t.List[t.Type[BaseActionHandler]],
     slack_client: SlackClient,
 ):
@@ -30,7 +30,7 @@ async def register_app_handlers(
 async def init_bot(
     *,
     openai_organization_id: str,
-    slack_message_handler: t.Type[BaseMessageHandler],
+    slack_message_handler: t.Optional[t.Type[BaseMessageHandler]],
     slack_action_handlers: t.List[t.Type[BaseActionHandler]],
     slack_template_path: str,
 ):
@@ -63,7 +63,7 @@ async def start_app(app):
 async def start_bot(
     *,
     openai_organization_id: str,
-    slack_message_handler: t.Type[BaseMessageHandler],
+    slack_message_handler: t.Optional[t.Type[BaseMessageHandler]],
     slack_action_handlers: t.List[t.Type[BaseActionHandler]],
     slack_template_path: str,
 ):
