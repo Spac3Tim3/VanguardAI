@@ -48,6 +48,38 @@ source venv/bin/activate
 make build-bot BOT=incident-response-slackbot
 ```
 
+## Environment Variables
+
+The bot requires the following environment variables to be set:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SLACK_BOT_TOKEN` | ✅ Yes | OAuth token for your Slack bot (starts with `xoxb-`) |
+| `SOCKET_APP_TOKEN` | ✅ Yes | App-level token with `connections:write` scope (starts with `xapp-`) |
+| `OPENAI_API_KEY` | ✅ Yes | Your OpenAI API key |
+
+Set these in your `.env` file or export them in your shell.
+
+## Configuration (config.toml)
+
+The bot requires a `config.toml` file in the `incident_response_slackbot` directory. Key fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `openai_organization_id` | string | Your OpenAI organization ID |
+| `feed_channel_id` | string | Slack channel ID for alert feed (must start with 'C') |
+
+## Deployment Checklist
+
+Before deploying, ensure:
+
+- [ ] All required environment variables are set
+- [ ] `config.toml` is configured with valid `feed_channel_id`
+- [ ] `feed_channel_id` starts with 'C' (valid Slack channel ID)
+- [ ] Bot is added to the feed channel
+- [ ] OpenAI API key has sufficient credits/quota
+- [ ] Alert system/database is properly configured
+
 ## Run bot with example configuration
 
 The example configuration is `config.toml`. Replace the configuration values as needed. In particular, the bot will post to channel `feed_channel_id`, and will take an OpenAI Organization ID associated with your OpenAI API key.
@@ -92,7 +124,40 @@ Let's start a chat:
 
 https://github.com/openai/openai-security-bots/assets/124844323/4b5dd292-b4d3-437a-9809-d6d80e824a9d
 
+## Troubleshooting
 
+### Bot won't start
+
+**Error: "Missing required environment variable"**
+- Ensure all required environment variables are set in your `.env` file
+- Run `source .env` if using shell exports
+
+**Error: "Configuration file not found"**
+- Ensure `config.toml` exists in `bots/incident-response-slackbot/incident_response_slackbot/`
+- Check file permissions
+
+**Error: "channel ID must start with 'C'"**
+- Verify `feed_channel_id` in `config.toml` is a valid Slack channel ID
+- Get the channel ID by right-clicking the channel → View channel details → Copy ID
+
+### Bot starts but doesn't process alerts
+
+- Verify the bot is added to the feed channel
+- Check bot token scopes include all required permissions
+- Review logs for handler errors
+- Ensure alerts are being sent via `send_alert.py` script
+
+### Chat not starting with users
+
+- Verify bot has permission to send direct messages
+- Check that user IDs in `alerts.toml` are correct
+- Ensure users have not disabled DMs from bots
+
+### Database errors
+
+- Check that the mock database is initialized
+- Verify file permissions for database storage
+- In production, ensure proper database connection
 
 ## Alert Details
 
